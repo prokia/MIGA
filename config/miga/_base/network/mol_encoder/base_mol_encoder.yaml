@@ -1,0 +1,7 @@
+  name: 'GNNEncoder'
+  gnn_type: 'gin'
+  graph_pooling: mean
+  dropout_ratio: 0.2
+  num_layer: 5
+  emb_dim: 300
+  task_type: 'classification'

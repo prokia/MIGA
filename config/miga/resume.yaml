@@ -1,0 +1,12 @@
+_Base_Config: 'config/miga/mil_miga_max_head_r50.yaml'
+
+gpus: '7'
+
+run:
+  task: max_head_r50_resume
+  resume: '/rhome/lianyu.zhou/cache/MIGA/Agg_maxhead_r50_mask_fix/2022-9-24-01-35-29/weight/model_345.pth'
+
+
+
+
+

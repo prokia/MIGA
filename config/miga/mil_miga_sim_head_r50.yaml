@@ -1,0 +1,28 @@
+_Base_Config: 'config/miga/mil_miga.yaml'
+gpus: '7'
+dataset_method:
+  train: 'MILSmilesOmicsDataset'
+
+batch_size: 64
+epochs: 400
+
+num_workers: 32
+run:
+  task: Agg_simhead_r50_no_intra
+  intra_modality_forward: False
+
+network:
+  _Base_Config: 'config/miga/_base/network/base_miga.yaml'
+  name: MilMIGA*
+  ImgEncoder:
+    instance_model_name: 'resnet50'
+
+
+  aggregationHead:
+    name: SimAggregationHead
+    dim: 300
+
+
+
+
+

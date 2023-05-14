@@ -1,0 +1,41 @@
+_Base_Config: 'config/miga/mil_miga.yaml'
+gpus: '4'
+dataset_method:
+  train: 'MILSmilesOmicsDataset'
+
+batch_size: 256
+epochs: 400
+base_transformation:
+  name: ['base_resize', 'base_toTensorV2']
+  input_size: [128, 128]
+aug_transformation:
+  name: ['classic_miga_aug', 'base_toTensorV2']
+  input_size: [128, 128]
+
+nimages: 25
+instance_num: 10
+
+fp16: true
+num_workers: 32
+runner: MILPretrainRunner
+run:
+  task: Agg_maxhead_r34_no_intral
+  intra_modality_forward: False
+
+network:
+  _Base_Config: 'config/miga/_base/network/base_miga.yaml'
+  name: MilMIGA*
+
+  aggregationHead:
+    name: MaxAggregationHead
+    dim: 300
+
+  i2i_loss:
+    name: PlainContrastiveLoss
+    atom_loss_name_list: ['infoNCE_loss' ]
+    infoNCE_loss:
+      temperature: 0.1
+
+
+
+

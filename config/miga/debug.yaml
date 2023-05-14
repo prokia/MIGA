@@ -1,0 +1,9 @@
+_Base_Config: 'config/miga/mil_miga_gformer.yaml'
+gpus: '0'
+num_workers: 0
+effective_percent: 0.1
+fp16: true
+batch_size: 4
+run:
+  task: temp
+

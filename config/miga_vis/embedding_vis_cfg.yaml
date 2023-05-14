@@ -1,0 +1,60 @@
+modal:
+  embeddings_dir: '/rhome/lianyu.zhou/cache/cluster_test_set_gformer_l3_b256_atom60'
+  modal_name_list: [ 'img', 'graph' ]
+  modal_imgs_dir: '/rhome/lianyu.zhou/dataset/'
+  samples_num: 1500
+  n_neighbors: 20
+  show_img: true
+
+run:
+  resume: '/rhome/lianyu.zhou/cache/MIGA/miga_transformer_b128_l3_atom60/2023-2-4-15-26-18/weight/model_700.pth'
+
+network:
+  name: MIGA
+  emb_dim: 256
+  MGM_mode:
+  molEncoder:
+    name: GraphTransformer
+    hidden_mlp_dims:
+      X: 256
+      E: 128
+    input_dims:
+      X: 60
+      E: 5
+    hidden_dims:
+      dx: 256
+      de: 64
+      n_head: 8
+      dim_ffX: 256
+      dim_ffE: 128
+    n_layers: 3
+  imgEncoder:
+    name: CnnEncoder
+    instance_model_name: resnet34
+    target_num: 256
+    n_ch: 5
+    pretrained: true
+  imgGenerator:
+    name: VariationalAutoEncoder
+    emb_dim: 300
+    beta: 1.0
+    loss: l2
+  molGenerator:
+    name: VariationalAutoEncoder
+    emb_dim: 300
+    beta: 1.0
+    loss: l2
+  gic_loss:
+    name: PlainDualModalityContrastiveLoss
+    atom_loss_name_list:
+    - cdist_loss
+    - dualModalityInfoNCE_loss
+    cdist_loss:
+      margin: 0.4
+    dualModalityInfoNCE_loss:
+      normalize: true
+      temperature: 0.1
+    atom_loss_weight_dict:
+      infoNCE_loss: 0.9
+      cdist_loss: 0.1
+

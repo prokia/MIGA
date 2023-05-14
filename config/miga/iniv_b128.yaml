@@ -1,0 +1,8 @@
+_Base_Config: 'config/miga/iniv.yaml'
+batch_size: 128
+atom_to_what: for_diffusion
+
+gpus: '4'
+
+run:
+  task: for_diffusion

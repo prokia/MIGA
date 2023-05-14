@@ -1,0 +1,23 @@
+_Base_Config: 'config/miga/mil_miga_max_head.yaml'
+gpus: '2'
+epochs: 400
+fp16: true
+num_workers: 32
+runner: MILPretrainRunner
+batch_size: 128
+run:
+  task: Agg_maxhead_r50_mask_fix_no_intra_b128
+  intra_modality_forward: False
+
+network:
+  _Base_Config: 'config/miga/_base/network/base_miga.yaml'
+  name: MilMIGA*
+
+  imgEncoder:
+    instance_model_name: 'resnet50'
+
+
+
+
+
+

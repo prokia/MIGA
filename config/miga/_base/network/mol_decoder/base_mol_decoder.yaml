@@ -1,0 +1,4 @@
+  name: 'VariationalAutoEncoder'
+  emb_dim: 300
+  beta: 1.
+  loss: 'l2'

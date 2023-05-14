@@ -1,0 +1,47 @@
+_Base_Config: 'config/miga/mil_miga_max_head_r50.yaml'
+gpus: '5'
+
+batch_size: 100
+epochs: 2000
+
+nimages: 25
+instance_num: 10
+
+atom_to_what: for_diffusion
+make_one_hot: True
+
+fp16: true
+num_workers: 32
+runner: MILPretrainRunner
+run:
+  task: max_head_gformer_no_intra
+  resume: '/rhome/lianyu.zhou/cache/MIGA/max_head_gformer_no_intra/2023-2-17-21-15-12/weight/model_285.pth'
+
+network:
+  _Base_Config: 'config/miga/_base/network/base_miga.yaml'
+  name: MilMIGA*
+  emb_dim: 256
+  imgEncoder:
+    target_num: 256
+  molEncoder:
+    name: GraphTransformer
+    hidden_mlp_dims: { 'X': 256, 'E': 128 }
+    input_dims: { 'X': 60, 'E': 5 }
+    # The dimensions should satisfy dx % n_head == 0
+    hidden_dims: { 'dx': 256, 'de': 64, 'n_head': 8, 'dim_ffX': 256, 'dim_ffE': 128 }
+
+    n_layers: 3
+
+  aggregationHead:
+    name: MaxAggregationHead
+    dim: 256
+
+  i2i_loss:
+    name: PlainContrastiveLoss
+    atom_loss_name_list: ['infoNCE_loss' ]
+    infoNCE_loss:
+      temperature: 0.1
+
+
+
+

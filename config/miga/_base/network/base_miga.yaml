@@ -1,0 +1,25 @@
+name: MIGA
+emb_dim: 300
+MGM_mode: #'AM'
+molEncoder:
+  _Base_Config: 'config/miga/_base/network/mol_encoder/base_mol_encoder.yaml'
+imgEncoder:
+  _Base_Config: 'config/miga/_base/network/img_encoder/base_img_encoder.yaml'
+imgGenerator:
+  _Base_Config: 'config/miga/_base/network/img_decoder/base_img_decoder.yaml'
+molGenerator:
+  _Base_Config: 'config/miga/_base/network/mol_decoder/base_mol_decoder.yaml'
+
+gic_loss:
+  name: PlainDualModalityContrastiveLoss
+  atom_loss_name_list: ['cdist_loss', 'dualModalityInfoNCE_loss']
+  cdist_loss:
+    margin: 0.4
+  dualModalityInfoNCE_loss:
+    normalize: True
+    temperature: 0.1
+  atom_loss_weight_dict:
+    infoNCE_loss: 0.9
+    cdist_loss: 0.1
+
+

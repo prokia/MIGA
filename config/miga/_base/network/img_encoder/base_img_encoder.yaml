@@ -1,0 +1,5 @@
+name: 'CnnEncoder'
+instance_model_name: 'resnet34'
+target_num: 300
+n_ch: 5
+pretrained: True

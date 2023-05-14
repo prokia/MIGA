@@ -1,0 +1,39 @@
+_Base_Config: 'config/_base/runner/base_runner.yaml'
+gpus: '6'
+distributed: false
+dataset: omics
+dataset_method:
+  train: 'NewSmilesOmicsDataset'
+  test: 'NewSmilesOmicsDataset'
+retrieval: 'image'
+cDNA: 0
+nimages: 5
+batch_size: 256
+epochs: 101
+lr: 3.0e-4
+lr_scale: 1.0
+decay: 0
+cnn_lr_scale: 1.0
+gnn_lr_scale: 1.0
+num_workers: 32
+mask_rate: 0.15
+mask_edge: 0
+csize: 3
+contextpred_neg_samples: 1
+
+num_run: 5
+frozen: false
+model_name: 'gnn'
+runseed: 0
+split: ogb_scaffold
+
+eval_train: true
+input_model_file: ''
+output_model_dir: ''
+
+runner: PretrainRunner
+run:
+  task: refact_reproduce
+
+network:
+  _Base_Config: 'config/miga/_base/network/base_miga.yaml'

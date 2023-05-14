@@ -1,0 +1,6 @@
+_Base_Config: 'config/miga/mil_miga.yaml'
+gpus: '6'
+run:
+  task: 'mil_miga_adamw'
+optimizer:
+  name: AdamW

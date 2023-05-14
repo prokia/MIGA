@@ -1,0 +1,24 @@
+_Base_Config: 'config/miga/iniv.yaml'
+gpus: '4'
+batch_size: 128
+runner: NoiseGraphPretrainRunner
+atom_to_what: for_diffusion
+make_one_hot: True
+num_workers: 32
+epochs: 2000
+run:
+  task: miga_transformer_b128_l3_atom60_edge_no_add
+  resume: '/rhome/lianyu.zhou/cache/MIGA/miga_transformer_b128_l3_atom60/2023-2-4-15-26-18/weight/model_700.pth'
+
+network:
+  emb_dim: 256
+  imgEncoder:
+    target_num: 256
+  molEncoder:
+    name: GraphTransformer
+    hidden_mlp_dims: { 'X': 256, 'E': 128}
+    input_dims: {'X': 60, 'E': 5}
+    # The dimensions should satisfy dx % n_head == 0
+    hidden_dims: { 'dx': 256, 'de': 64, 'n_head': 8, 'dim_ffX': 256, 'dim_ffE': 128}
+
+    n_layers: 3

@@ -1,0 +1,8 @@
+_Base_Config: 'config/miga/iniv.yaml'
+gpus: '7'
+batch_size: 64
+run:
+  task: miga_r50
+
+network:
+  instance_model_name: 'resnet50'
