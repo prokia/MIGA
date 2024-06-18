@@ -7,4 +7,4 @@ from .cm_contrastive_loss import PlainDualModalityContrastiveLoss
 
 
 def get_loss(loss_cfg):
-    return loss_register[loss_cfg.name](loss_cfg)
+    return loss_register[loss_cfg['name']](loss_cfg)

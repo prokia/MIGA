@@ -4,8 +4,7 @@ from utils.my_containers import Register, Constructor
 
 runner_register = Constructor()
 from .pretrain_runner import PretrainRunner
-from .m_pretrain_runner import MILPretrainRunner
-from .pretrain_runner_noise_graph import NoiseGraphPretrainRunner
+from .pretrain_runner_dense_matrix import DenseGraphPretrainRunner
 
 
 def get_runner(runner_name):

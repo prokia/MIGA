@@ -5,7 +5,6 @@ import torch.nn.functional as F
 from core.loss import loss_register
 from core.loss.base.atom_loss_combinator import AtomLossCombinator
 from core.loss.utils import loss_dict_remake_wrapper
-from utils.tensor_operator import to_device
 
 
 @loss_register

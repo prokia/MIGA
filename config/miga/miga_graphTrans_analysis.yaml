@@ -1,15 +1,15 @@
 _Base_Config: 'config/miga/miga_graphTrans.yaml'
 gpus: '2'
 batch_size: 128
-runner: NoiseGraphPretrainRunner
-atom_to_what: for_diffusion
+runner: DenseGraphPretrainRunner
+atom_to_what: dense_matrix
 make_one_hot: True
 num_workers: 32
 epochs: 2000
 #vis_mol_to_dir: '/rhome/lianyu.zhou/dataset/omics_mol_vis'
 run:
-  task: miga_transformer_b128_l3_atom60_randomm
+  task: miga_transformer_b128_l3_atom60_vis
   run_type: embedding_analysis
-  embedding_save_dir: "/rhome/lianyu.zhou/cache/cluster_test_set_gformer_l3_b256_atom60_random"
-  resume: #'/rhome/lianyu.zhou/cache/MIGA/miga_transformer_b128_l3_atom60/2023-2-4-15-26-18/weight/model_700.pth'
+  embedding_save_dir: "/home/raojh/github/MIGA/cache/cluster_test_set_gformer_l3_b256_atom60"
+  resume: '/home/raojh/github/MIGAcache/miga_transformer_b128_l3_atom60/2023-2-4-15-26-18/weight/model_700.pth'
 

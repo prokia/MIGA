@@ -3,7 +3,7 @@ run:
     n_epoch: 1000
     ############################################################################
     task: temp/temp
-    save_path: '/rhome/lianyu.zhou/cache/MIGA/{}/{}'
+    save_path: '/home/raojh/github/MIGA/{}/{}'
     FP16: True
     save_epoch: []#'[50 * i for i in range(10, 600)]'
 

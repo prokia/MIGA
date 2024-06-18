@@ -1,3 +1,5 @@
+import os
+
 import albumentations as A
 import numpy as np
 import pandas as pd
@@ -6,11 +8,31 @@ from rdkit.Chem import AllChem
 
 from dataset.utils.loader import mol_to_graph_data_obj_simple, mol_to_graph_data_obj_asAtomNum
 
-from dataset import get_dataset
+
+def process_graph(molecule_smiles, model_name='graph_transformer'):
+    if not isinstance(molecule_smiles, list):
+        molecule_smiles = [molecule_smiles]
+    graphs = []
+    for smiles in molecule_smiles:
+        rdkit_mol = AllChem.MolFromSmiles(smiles)
+        if model_name == 'graph_transformer':
+            atom_to_what = 'dense_matrix'
+            make_one_hot = True
+        elif model_name == 'gin':
+            atom_to_what = None
+            make_one_hot = False
+
+        if rdkit_mol != None:  # ignore invalid mol objects
+            if atom_to_what is None:
+                molecular_graph = mol_to_graph_data_obj_simple(rdkit_mol)
+            else:
+                molecular_graph = mol_to_graph_data_obj_asAtomNum(rdkit_mol, make_one_hot)
+        graphs.append(molecular_graph)
+    return graphs
 
 
 def read_data_omics(args, mode):
-    path = f'/gxr/shuangjia/github/chemical_reaction/data/omics/{mode}.csv'
+    path = os.path.join(args.data_path, 'new_train.csv')
 
     print('preprocessing %s data from %s' % (mode, path))
 
@@ -19,20 +41,13 @@ def read_data_omics(args, mode):
         if mode == 'test':
             df = pd.read_csv(path.replace('test', 'train'))[:3000]
         else:
-            df = pd.read_csv(path)
-
-        def choose_one(x):
-            return x.values[0]
-
-        def topk(x):
-            return list(x)[:args.nimages]
-
-        df = df.groupby('compound').agg({'smiles': choose_one, 'npy_path': topk}).reset_index()
+            df = pd.read_csv(path)[3000:]
 
         print(len(df), '***')
 
         for i in range(0, len(df)):
             molecule_smiles, img_paths = df.iloc[i]['smiles'], df.iloc[i]['npy_path']
+            img_paths = os.path.join(args.data_path, img_paths)
 
             try:
                 rdkit_mol = AllChem.MolFromSmiles(molecule_smiles)
@@ -82,20 +97,9 @@ def load_data_omics(args):
     train_graphs = read_data_omics(args, 'train')
     test_graphs = read_data_omics(args, 'test')
 
-    # eval_idxs = np.random.choice(np.arange(len(train_graphs)),3000,replace=False)
-    # valid_graphs = [train_graphs[i] for i in eval_idxs]
-    # for gi in range(len(valid_graphs)):
-    #     valid_graphs[gi][1] = valid_graphs[gi][1][:5]
-    # train_graphs = [train_graphs[i] for i in range(len(train_graphs)) if i not in eval_idxs]
-    eval_idxs = np.random.choice(np.arange(len(train_graphs)), 3000, replace=False)
-    test_graphs = [train_graphs[i] for i in eval_idxs]
-    for gi in range(len(test_graphs)):
-        test_graphs[gi][1] = test_graphs[gi][1][:5]
-    train_graphs = [train_graphs[i] for i in range(len(train_graphs)) if i not in eval_idxs]
-    train_dataset = get_dataset(args.dataset_method.train)(args, 'train', train_graphs, train_transform)
+    train_dataset = NewSmilesOmicsDataset(args, 'train', train_graphs, train_transform)
     # valid_dataset = NewSmilesOmicsDataset(args, 'valid', feature_encoder, valid_graphs,transform)
-    test_dataset = get_dataset(args.dataset_method.test)(args, 'test', test_graphs, test_transform)
-
+    test_dataset = NewSmilesOmicsDataset(args, 'test', test_graphs, test_transform)
     # train_dataset = NewSmilesOmicsDataset(args, 'train', train_graphs,train_transform)
     # test_dataset = NewSmilesOmicsDataset(args, 'test', test_graphs,test_transform)
     return train_dataset, test_dataset

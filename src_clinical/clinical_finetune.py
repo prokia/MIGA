@@ -1,4 +1,4 @@
-import argparse, os, random
+import os, random
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -7,7 +7,6 @@ from torch_geometric.data import DataLoader
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 
@@ -17,9 +16,9 @@ import sys
 dir_path = os.path.dirname(os.path.realpath(__file__))
 parent_dir_path = os.path.abspath(os.path.join(dir_path, os.pardir))
 sys.path.insert(0, parent_dir_path)
-from config import args
-from splitters import random_scaffold_split, random_split, scaffold_split
-from models import GNN_graphpred
+from utils.config_args import args
+from utils.splitters import random_scaffold_split, random_split, scaffold_split
+from core.network.model.encoder.gnn.gnn import GNN_graphpred
 from clinical_dataset import MoleculeDataset
 
 

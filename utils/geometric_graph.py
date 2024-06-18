@@ -3,7 +3,7 @@ import torch_geometric
 from torch_geometric.data import Data as PyGData
 from torch_geometric.utils import dense_to_sparse, to_dense_batch, to_dense_adj
 
-from utils.tensor_operator import tensor2array, PlaceHolder
+from utils.tensor_operator import tensor2array, GraphTensorPacking
 
 from utils.tensor_operator import make_one_hot
 
@@ -48,7 +48,7 @@ def to_dense(x, edge_index, edge_attr, batch, holder=True):
     E = encode_no_edge(E)
 
     if holder:
-        return PlaceHolder(X=X, E=E, y=None), node_mask
+        return GraphTensorPacking(X=X, E=E, y=None), node_mask
     else:
         return X, E, node_mask
 

@@ -1,6 +1,6 @@
 name: MIGA
 emb_dim: 300
-MGM_mode: #'AM'
+MGM_mode: 'AM'
 molEncoder:
   _Base_Config: 'config/miga/_base/network/mol_encoder/base_mol_encoder.yaml'
 imgEncoder:
@@ -12,6 +12,10 @@ molGenerator:
 
 gic_loss:
   name: PlainDualModalityContrastiveLoss
+  # Machine: atom_loss is the smallest component of the loss function and they do not include any other types of loss functions,
+  # and there is no weight balancing within them.
+  # You must specify each atom loss name in "atom_loss_name_list"
+  # We default use cdist_loss and dualModalityInfoNCE_loss
   atom_loss_name_list: ['cdist_loss', 'dualModalityInfoNCE_loss']
   cdist_loss:
     margin: 0.4
@@ -19,7 +23,7 @@ gic_loss:
     normalize: True
     temperature: 0.1
   atom_loss_weight_dict:
-    infoNCE_loss: 0.9
+    'dualModalityInfoNCE_loss': 0.9
     cdist_loss: 0.1
 
 

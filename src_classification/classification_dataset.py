@@ -7,11 +7,8 @@ import networkx as nx
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from torch_geometric.data import Data, InMemoryDataset
-import torch.nn.functional as F
 
 # allowable node and edge features
-from src_downstream_utils.down_stream_utils import mol_to_gformer_matrix_data
-
 allowable_features = {
     'possible_atomic_num_list': list(range(1, 119)),
     'possible_formal_charge_list': [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
@@ -43,6 +40,7 @@ allowable_features = {
     ]
 }
 
+
 def mol_to_graph_data_obj_clf(mol):
     """
     Converts rdkit mol object to graph Data object required by the pytorch
@@ -52,18 +50,18 @@ def mol_to_graph_data_obj_clf(mol):
     :return: graph data object with the attributes: x, edge_index, edge_attr
     """
     # atoms
-    num_atom_features = 2   # atom type,  chirality tag
+    num_atom_features = 2  # atom type,  chirality tag
     atom_features_list = []
     for atom in mol.GetAtoms():
         atom_feature = [allowable_features['possible_atomic_num_list'].index(
             atom.GetAtomicNum())] + [allowable_features[
-            'possible_chirality_list'].index(atom.GetChiralTag())]
+                                         'possible_chirality_list'].index(atom.GetChiralTag())]
         atom_features_list.append(atom_feature)
     x = torch.tensor(np.array(atom_features_list), dtype=torch.long)
 
     # bonds
-    num_bond_features = 2   # bond type, bond direction
-    if len(mol.GetBonds()) > 0: # mol has bonds
+    num_bond_features = 2  # bond type, bond direction
+    if len(mol.GetBonds()) > 0:  # mol has bonds
         edges_list = []
         edge_features_list = []
         for bond in mol.GetBonds():
@@ -71,7 +69,7 @@ def mol_to_graph_data_obj_clf(mol):
             j = bond.GetEndAtomIdx()
             edge_feature = [allowable_features['possible_bonds'].index(
                 bond.GetBondType())] + [allowable_features[
-                                            'possible_bond_dirs'].index(
+                'possible_bond_dirs'].index(
                 bond.GetBondDir())]
             edges_list.append((i, j))
             edge_features_list.append(edge_feature)
@@ -84,13 +82,14 @@ def mol_to_graph_data_obj_clf(mol):
         # data.edge_attr: Edge feature matrix with shape [num_edges, num_edge_features]
         edge_attr = torch.tensor(np.array(edge_features_list),
                                  dtype=torch.long)
-    else:   # mol has no bonds
+    else:  # mol has no bonds
         edge_index = torch.empty((2, 0), dtype=torch.long)
         edge_attr = torch.empty((0, num_bond_features), dtype=torch.long)
 
     data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
 
     return data
+
 
 def graph_data_obj_to_mol_clf(data_x, data_edge_index, data_edge_attr):
     """
@@ -341,10 +340,6 @@ class MoleculeDataset(InMemoryDataset):
         raise NotImplementedError('Must indicate valid location of raw data. '
                                   'No download allowed')
 
-    @property
-    def processed_dir(self):
-        return f"/rhome/lianyu.zhou/dataset/omics_down_stream/{self.dataset}"
-
     def process(self):
         data_smiles_list = []
         data_list = []
@@ -359,7 +354,7 @@ class MoleculeDataset(InMemoryDataset):
                 ## convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
                 # sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                data = mol_to_gformer_matrix_data(rdkit_mol)
+                data = mol_to_graph_data_obj_clf(rdkit_mol)
                 # manually add mol id
                 data.id = torch.tensor(
                     [i])  # id here is the index of the mol in
@@ -374,14 +369,11 @@ class MoleculeDataset(InMemoryDataset):
             for i in range(len(smiles_list)):
                 print(i)
                 rdkit_mol = rdkit_mol_objs[i]
-                rdkit_mol = Chem.RemoveHs(rdkit_mol)
                 if rdkit_mol != None:
                     # # convert aromatic bonds to double bonds
                     # Chem.SanitizeMol(rdkit_mol,
                     #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                    data = mol_to_gformer_matrix_data(rdkit_mol)
-                    if data is None:
-                        continue
+                    data = mol_to_graph_data_obj_clf(rdkit_mol)
                     # manually add mol id
                     data.id = torch.tensor(
                         [i])  # id here is the index of the mol in
@@ -389,6 +381,7 @@ class MoleculeDataset(InMemoryDataset):
                     data.y = torch.FloatTensor([labels[i]])
                     data_list.append(data)
                     data_smiles_list.append(smiles_list[i])
+
 
         elif self.dataset == 'hiv':
             smiles_list, rdkit_mol_objs, labels = \
@@ -399,7 +392,7 @@ class MoleculeDataset(InMemoryDataset):
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
                 #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                data = mol_to_gformer_matrix_data(rdkit_mol)
+                data = mol_to_graph_data_obj_clf(rdkit_mol)
                 # manually add mol id
                 data.id = torch.tensor(
                     [i])  # id here is the index of the mol in
@@ -418,11 +411,10 @@ class MoleculeDataset(InMemoryDataset):
                     # # convert aromatic bonds to double bonds
                     # Chem.SanitizeMol(rdkit_mol,
                     #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                    data = mol_to_gformer_matrix_data(rdkit_mol)
-                    if data is None:
-                        continue
+                    data = mol_to_graph_data_obj_clf(rdkit_mol)
                     # manually add mol id
-                    data.id = torch.tensor([i])  # id here is the index of the mol in
+                    data.id = torch.tensor(
+                        [i])  # id here is the index of the mol in
                     # the dataset
                     data.y = torch.FloatTensor(labels[i, :])
                     data_list.append(data)
@@ -455,8 +447,7 @@ def _load_tox21_dataset(input_path):
     :return: list of smiles, list of rdkit mol obj, np.array containing the
     labels
     """
-    input_df = pd.read_csv(
-        f"/gxr/shuangjia/github/omics_infomax_jiahua/datasets/ogbg_moltox21/mapping/mol.csv.gz".replace("-", "_"))
+    input_df = pd.read_csv(f"dataset/ogbg-moltox21/mapping/mol.csv.gz".replace("-", "_"))
     smiles_list = input_df['smiles']
     rdkit_mol_objs_list = [AllChem.MolFromSmiles(s) for s in smiles_list]
     tasks = ['NR-AR', 'NR-AR-LBD', 'NR-AhR', 'NR-Aromatase', 'NR-ER', 'NR-ER-LBD',
@@ -477,16 +468,9 @@ def _load_hiv_dataset(input_path):
     :return: list of smiles, list of rdkit mol obj, np.array containing the
     labels
     """
-    input_df = pd.read_csv(
-        f"/gxr/shuangjia/github/omics_infomax_jiahua/datasets/ogbg-molhiv/mapping/mol.csv.gz".replace("-", "_"))
+    input_df = pd.read_csv(f"dataset/ogbg-molhiv/mapping/mol.csv.gz".replace("-", "_"))
     smiles_list = input_df['smiles']
-    rdkit_mol_objs_list = []
-    for s in smiles_list:
-        try:
-            s = max(s.split('.'), key=len, default='')
-        except:
-            s = ""
-        rdkit_mol_objs_list.append(AllChem.MolFromSmiles(s))
+    rdkit_mol_objs_list = [AllChem.MolFromSmiles(s) for s in smiles_list]
     labels = input_df['HIV_active']
     # convert 0 to -1
     labels = labels.replace(0, -1)
@@ -503,7 +487,7 @@ def _load_bbbp_dataset(input_path):
     :return: list of smiles, list of rdkit mol obj, np.array containing the
     labels
     """
-    input_df = pd.read_csv(input_path)
+    input_df = pd.read_csv(f"dataset/ogbg-molbbbp/mapping/mol.csv.gz".replace("-", "_"))
     smiles_list = input_df['smiles']
     rdkit_mol_objs_list = [AllChem.MolFromSmiles(s) for s in smiles_list]
 
@@ -530,8 +514,7 @@ def _load_toxcast_dataset(input_path):
     labels
     """
     # NB: some examples have multiple species, some example smiles are invalid
-    input_df = pd.read_csv(
-        f"/gxr/shuangjia/github/omics_infomax_jiahua/datasets/ogbg-moltoxcast/mapping/mol.csv.gz".replace("-", "_"))
+    input_df = pd.read_csv(f"dataset/ogbg-moltoxcast/mapping/mol.csv.gz".replace("-", "_"))
     smiles_list = input_df['smiles']
     rdkit_mol_objs_list = [AllChem.MolFromSmiles(s) for s in smiles_list]
     # Some smiles could not be successfully converted

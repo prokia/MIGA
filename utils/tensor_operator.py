@@ -7,7 +7,7 @@ import torch
 from torch.nn import functional as F
 
 
-class PlaceHolder:
+class GraphTensorPacking:
     def __init__(self, X, E, y=None):
         self.X = X
         self.E = E
@@ -52,6 +52,7 @@ def clamp_to_prob(x, inplace=True):
     x[x >= 1] = 1
     x[x < 0] = 0
     return x
+
 
 def sigmoid_with_clamp(x, inf=1e-4, sup=1 - 1e-4):
     x = x.clone()
@@ -273,4 +274,3 @@ def convert_node_matrix(x):
 
 def convert_edge_matrix(edge):
     pass
-

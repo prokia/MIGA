@@ -1,0 +1,11 @@
+_Base_Config: 'config/miga/miga_gin.yaml'
+gpus: '2'
+batch_size: 128
+num_workers: 32
+
+run:
+  task: miga_gin_analysis
+  run_type: embedding_analysis
+  embedding_save_dir: "/home/raojh/github/MIGA/cache/gin_embedding_vis"
+  resume: #'/rhome/lianyu.zhou/recode/cdist_loss_item/2022-9-15-02-16-12/weight/model_100.pth'
+

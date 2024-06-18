@@ -2,19 +2,19 @@ from utils.tensor_operator import tensor2array
 from functools import wraps
 
 
-def merge_loss_dict(loss_dict_list, weight_dict=None, loss_prefix_list=None):
+def merge_loss_dict(loss_dict, weight_dict=None, loss_prefix_list=None):
     re_loss_dict = dict()
     re_total_loss = 0
-    for loss_i, loss_dict in enumerate(loss_dict_list):
-        prefix = "" if loss_prefix_list is None else loss_prefix_list[loss_i]
-        total_loss = loss_dict.pop('total_loss')
+    for loss_name, sub_loss_dict in loss_dict.items():
+        prefix = '_'.join(loss_name.split('_')[:-1])
+        total_loss = sub_loss_dict.pop('total_loss')
         if weight_dict is not None:
-            weight = weight_dict.get(loss_i, 1)
+            weight = weight_dict.get(loss_name, 1)
         else:
             weight = 1
         re_total_loss = re_total_loss + weight * total_loss
-        loss_dict = {f'{prefix}{k}': v for k, v in loss_dict.items()}
-        re_loss_dict.update(loss_dict)
+        sub_loss_dict[loss_name] = tensor2array(total_loss)
+        re_loss_dict.update(sub_loss_dict)
     re_loss_dict['total_loss'] = re_total_loss
     return re_loss_dict
 
@@ -41,5 +41,5 @@ def symmetric_loss_wrapper(func):
     def make_symmetric_func(in_1, in_2, *args, **kwargs):
         a = func(in_1, in_2, *args, **kwargs)
         b = func(in_2, in_1, *args, **kwargs)
-        return a + b / 2.0
+        return (a + b) / 2.0
     return make_symmetric_func

@@ -61,8 +61,8 @@ def setup_device(gpus, mannul=False):
         if gpus is None:
             device = torch.device("cpu")
             return device
-        if os.environ['RANK'] in ['-1', '0']:
-            print('gpus', gpus)
+        # if os.environ.get('RANK', '-1') in ['-1', '0']:
+        #     print('Device:', gpus)
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = gpus  # "0, 5, 6"
     if gpus is None or not torch.cuda.is_available():

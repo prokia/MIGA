@@ -3,7 +3,6 @@ from copy import deepcopy
 
 import inspect
 
-
 class Fake(object):
     def __init__(self):
         self.fake = 1
@@ -97,7 +96,7 @@ class Constructor(Register):
         if name in self.non_cfg_obj_set:
             return self[name](**name_with_cfg)
         return self[name](name_with_cfg)
-
+    
 
 class MethodManager(object):
     def __init__(self, cfg):

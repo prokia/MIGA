@@ -9,7 +9,7 @@ from torch import Tensor
 
 from core.network.model import model_register
 from core.network.model.encoder.graph_transformer.layers import Xtoy, Etoy
-from utils.tensor_operator import PlaceHolder
+from utils.tensor_operator import GraphTensorPacking
 
 
 class GraphTransformerLayer(nn.Module):
@@ -189,7 +189,7 @@ class GraphTransformer(nn.Module):
     def forward(self, X, E, node_mask=None):
         new_E = self.mlp_in_E(E)
         new_E = (new_E + new_E.transpose(1, 2)) / 2
-        after_in = PlaceHolder(X=self.mlp_in_X(X), E=new_E).mask(node_mask)
+        after_in = GraphTensorPacking(X=self.mlp_in_X(X), E=new_E).mask(node_mask)
         X, E, y = after_in.X, after_in.E, after_in.y
 
         for layer in self.tf_layers:

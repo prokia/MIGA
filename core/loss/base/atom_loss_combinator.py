@@ -7,6 +7,8 @@ from core.loss import loss_register
 from core.loss.utils import loss_dict_remake_wrapper, merge_loss_dict
 from functools import partial
 
+from utils.tensor_operator import tensor2array
+
 
 class AtomLossCombinator(nn.Module):
     def __init__(self, cfg):
@@ -17,9 +19,9 @@ class AtomLossCombinator(nn.Module):
 
     @loss_dict_remake_wrapper
     def forward(self, *args, **kwargs):
-        loss_dict_list = []
+        loss_dict = {}
         for atom_loss_name, atom_loss in self.atom_loss_dict.items():
             atom_loss_value = atom_loss(*args, **kwargs)
-            loss_dict_list.append({atom_loss_name: atom_loss_value, 'total_loss': atom_loss_value})
-        return merge_loss_dict(loss_dict_list, self.cfg.get('atom_loss_weight_dict', None))
+            loss_dict[atom_loss_name] = {atom_loss_name: tensor2array(atom_loss_value), 'total_loss': atom_loss_value}
+        return merge_loss_dict(loss_dict, self.cfg.get('atom_loss_weight_dict', None))
 

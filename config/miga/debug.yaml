@@ -1,4 +1,4 @@
-_Base_Config: 'config/miga/mil_miga_gformer.yaml'
+_Base_Config: 'config/miga/miga_graphTrans.yaml'
 gpus: '0'
 num_workers: 0
 effective_percent: 0.1

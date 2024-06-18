@@ -1,5 +1,5 @@
 from .utils.collate_fn import BatchMasking, BatchSubstructContext, BatchSubstructContext3D, BatchMaskingGraph, \
-    BatchNoiseMatrix
+    BatchDenseMatrix
 from torch.utils.data import DataLoader
 
 class DataLoaderMasking(DataLoader):
@@ -78,7 +78,7 @@ class DataLoaderMaskingGraph(DataLoader):
             **kwargs)
 
 
-class DataLoaderNoiseMatrix(DataLoader):
+class DataLoaderDenseMatrix(DataLoader):
     """Data loader which merges data objects from a
     :class:`torch_geometric.data.dataset` to a mini-batch.
     Args:
@@ -89,9 +89,9 @@ class DataLoaderNoiseMatrix(DataLoader):
             reshuffled at every epoch (default: :obj:`True`) """
 
     def __init__(self, dataset, transforms, batch_size=1, shuffle=True, **kwargs):
-        super(DataLoaderNoiseMatrix, self).__init__(
+        super(DataLoaderDenseMatrix, self).__init__(
             dataset,
             batch_size,
             shuffle,
-            collate_fn=lambda items: BatchNoiseMatrix.from_data_list(items, transforms),
+            collate_fn=lambda items: BatchDenseMatrix.from_data_list(items, transforms),
             **kwargs)

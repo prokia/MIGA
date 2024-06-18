@@ -1,16 +1,15 @@
 import asyncio
 import os
-import time
 from collections import defaultdict, OrderedDict
+
+import torch.nn.functional as F
+from torch.cuda.amp import autocast, GradScaler
 
 from core.runner import runner_register
 from dataset.utils.load_data import load_data_omics
 from utils.my_containers import AverageMeter, deep_dict_get
 from utils.tensor_operator import to_device, tensor2array
-from torch.cuda.amp import autocast, GradScaler
-import torch.nn.functional as F
-
-from utils.utils import dict2str, custom_load_pretrained_dict
+from utils.utils import dict2str, custom_load_pretrained_dict, mkdir
 
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -23,17 +22,15 @@ from sklearn.metrics import roc_auc_score
 
 import torch
 import torch.optim as optim
-from torch_geometric.nn import global_mean_pool
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 import numpy as np
 
-# from config import args
 from utils.distribution import sync_barrier_re1
 
 from dataset.utils.mol_transform import MaskAtom
-from dataset.dataloader import DataLoaderMasking, DataLoaderNoiseMatrix
+from dataset.dataloader import DataLoaderMasking, DataLoaderDenseMatrix
 from utils.loggers import LoggerManager
 
 logger = LoggerManager().get_logger()
@@ -83,7 +80,7 @@ class PretrainRunner(object):
             loader = DataLoaderMasking(dataset, transform=transform, batch_size=args.batch_size, drop_last=drop_last,
                                        shuffle=shuffle, num_workers=args.num_workers)
         else:
-            loader = DataLoaderNoiseMatrix(dataset, transforms=None, batch_size=args.batch_size, drop_last=drop_last,
+            loader = DataLoaderDenseMatrix(dataset, transforms=None, batch_size=args.batch_size, drop_last=drop_last,
                                            shuffle=shuffle, num_workers=args.num_workers)
         return loader
 
@@ -120,17 +117,13 @@ class PretrainRunner(object):
         h5 = float(np.mean(all_rankings <= 5))
         h10 = float(np.mean(all_rankings <= 10))
         h100 = float(np.mean(all_rankings <= 100))
-        logger('========== Training Process: Epoch {} =========='.format(epoch))
+        logger('========== Training Process: Epoch {} =========='.format(self.epoch))
         logger('mrr: %.4f mr: %.4f  h1: %.4f  h3: %.4f  h5: %.4f  h10: %.4f  h100: %.4f' % (
             mrr, mr, h1, h3, h5, h10, h100))
 
     def update_loss(self, model_out_dict):
         loss_dict = {k: v for k, v in model_out_dict.items() if '_loss' in k}
         loss_dict = {loss_name: tensor2array(loss_value) for loss_name, loss_value in loss_dict.items()}
-        # if self.is_distribution_running():
-        #     gather_loss_dict = [None] * self.cfg.dist.world_size
-        #     dist.all_gather_object(gather_loss_dict, loss_dict)
-        #     loss_dict = value_dict_mean(gather_loss_dict)
         for loss_name, loss_value in loss_dict.items():
             try:
                 self.__getattribute__(f'{self.dataset_name}_{loss_name}_meter').update(tensor2array(loss_value))
@@ -360,11 +353,14 @@ class PretrainRunner(object):
                 for e_idx, e in enumerate(graph_and_img_embeddings):
                     modality_embedding_list[e_idx].append(tensor2array(e))
             dis_list = sorted(dis_list)
-            # fig = plt.figure(f'similarity histogram')
-            # ax = fig.add_subplot(1, 1, 1)
-            # ax.hist(self.dis_list, 20)
-            plt.hist(dis_list, 40)
+            fig = plt.figure(f'similarity histogram')
+            hist = plt.hist(dis_list, 40, density=True)
+            # bin_num_list = hist[0]
+            # max_bin = max(bin_num_list)
+            # bin_num_list /= len(dis_list)
+            # plt.yticks(np.linspace(0, max_bin, num=10), ['{:,.4f}'.format(x) for x in np.linspace(0, max(bin_num_list), num=10)])
             embedding_save_dir = self.cfg.run.get('embedding_save_dir', None)
+            mkdir(embedding_save_dir)
             plt.savefig(os.path.join(embedding_save_dir, "distance distribution.png"))
             for embedding_cls_idx, embeddings_list in enumerate(modality_embedding_list):
                 embedding_array = np.concatenate(embeddings_list, axis=0)
@@ -372,76 +368,6 @@ class PretrainRunner(object):
                 save_path = os.path.join(embedding_save_dir, save_name)
                 np.save(save_path, embedding_array)
 
-    def embedding_vis(self):
-        embedding_dir = self.cfg.run.get('embedding_dir', None)
-        if embedding_dir is not None:
-            need = ['img', 'graph']
-            import numpy as np
-            import os
-            import miga_emblaze.emblaze as m_emb
-            from miga_emblaze.emblaze.utils import Field, ProjectionTechnique
-            import cv2
-
-            embedding_dir = '/rhome/lianyu.zhou/cache/cluster_test_set_gformer_l3_b256_atom60'
-            mol_img_dir = '/rhome/lianyu.zhou/dataset/omics_mol_vis'
-            need = ['img', 'graph']
-            modal_num = len(need)
-            samples_num = 300
-            embeddings_list = [np.load(os.path.join(embedding_dir, f"{name}_embedding.npy"))[:samples_num]
-                               for name in need]
-
-            modal_imgs_list = [[] for _ in range(modal_num)]
-            for m_i, modal_name in enumerate(need):
-                modal_imgs_dir = f'/rhome/lianyu.zhou/dataset/omics_{modal_name}_vis'
-                for i in range(samples_num):
-                    read_path = os.path.join(modal_imgs_dir, f"{i:05d}.png")
-                    img = cv2.imread(read_path)[..., ::-1]
-                    modal_imgs_list[m_i].append(img)
-
-            import umap
-            color_list = [i * np.ones(e.shape[0]) for i, e in enumerate(embeddings_list)]
-            color_array, merge_embedding = list(map(lambda x: np.concatenate(x, axis=0), [color_list, embeddings_list]))
-            trans = umap.UMAP(metric='cosine', n_neighbors=100).fit(merge_embedding)
-            reduced_embedding = trans.embedding_
-            view_embedding = m_emb.EmbeddingSet(
-                [m_emb.Embedding({Field.POSITION: reduced_embedding, Field.COLOR: color_array})])
-            view_embedding.compute_neighbors(metric='euclidean', n_neighbors=100)
-
-            from utils.utils import add_new_embedding
-
-            new_reduced, new_thum = add_new_embedding([i for i in range(samples_num, samples_num + 5)],
-                                                      0,
-                                                      trans,
-                                                      reduced_embedding,
-                                                      color_array,
-                                                      modal_imgs_list[0] + modal_imgs_list[1])
-
-            # Represent the high-dimensional embedding
-            color = np.ones((len(embeddings_list[0]),))
-            embeddings = m_emb.EmbeddingSet([
-                m_emb.Embedding({Field.POSITION: X, Field.COLOR: color}, label=emb_name)
-                for X, emb_name in zip(embeddings_list, need)
-            ])
-            # Compute nearest neighbors in the high-D space (for display)
-            embeddings.compute_neighbors(metric='cosine', n_neighbors=5)
-
-            # Make aligned UMAP
-            reduced, trans = embeddings.project(method=ProjectionTechnique.ALIGNED_UMAP, metric='cosine')
-            reduced_emb_array_list = [e.field(Field.POSITION) for e in reduced.embeddings]
-
-            new_embeddings_list = [np.load(os.path.join(embedding_dir, f"{name}_embedding.npy"))[300: 600]
-                                              for name in need]
-            g = new_embeddings_list[0][:1]
-            reduced_g = trans.mappers_[0].transform(g)
-            reduced_emb_array_list[0] = np.concatenate([reduced_emb_array_list[0], reduced_g], axis=0)
-            new_reduced_embedding = m_emb.EmbeddingSet([
-                m_emb.Embedding({Field.POSITION: X, Field.COLOR: i * np.ones(X.shape[0])}, label=emb_name)
-                for i, (X, emb_name) in enumerate(zip(reduced_emb_array_list, need))
-            ])
-            new_reduced_embedding.compute_neighbors(metric='euclidean', n_neighbors=10)
-            new_w = m_emb.Viewer(embeddings=new_reduced_embedding)
-            w = m_emb.Viewer(embeddings=reduced)
-            x = 1
 
     def main(self):
         args = self.cfg
@@ -526,28 +452,6 @@ class PretrainRunner(object):
             writed_name = e_n
             item_value = e_v
             self.tb_add_scalar(writed_name, item_value, self.epochs)
-
-    # def update_monitor(self, metric_dict):
-    #     is_best = False
-    #     for e_n, e_v in metric_dict:
-    #         writed_name = e_n
-    #         item_value = e_v
-    #         if f'best_{e_n}' in self.monitor:
-    #             if e_v > self.monitor[f'best_{eval_name}']:
-    #                 is_best = True
-    #     eval_item_dict = defaultdict(lambda: 0)
-    #     for dataset_name, dataset_eval_info in eval_info.items():
-    #         for eval_name, eval_value in dataset_eval_info.items():
-    #             eval_item_dict[eval_name] += eval_value
-    #     for eval_name, eval_value in eval_item_dict.items():
-    #         eval_value /= len(eval_info)
-    #         self.csv_logger[f'mean_{eval_name}'].append(eval_value)
-    #         if f'best_{eval_name}' in self.monitor:
-    #             if eval_value > self.monitor[f'best_{eval_name}']:
-    #                 is_best = True
-    #                 self.monitor[f'best_{eval_name}'] = eval_value
-    #             self.csv_logger[f'best_{eval_name}'].append(self.monitor[f'best_{eval_name}'])
-    #     return is_best
 
     @sync_barrier_re1
     def torch_save(self, state, path):

@@ -2,7 +2,6 @@ import os
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
 import torch.optim as optim
 
 from os.path import join
@@ -11,24 +10,16 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 from torch_geometric.data import DataLoader
 
+from core.network.model.encoder.gnn.gnn import GNN_graphpred
 from regression_dataset import MoleculeDatasetRegression
 
 import sys
-
-from core.network.model.encoder.graph_transformer.transformer_model import GraphTransformer
-from dataset.dataloader import DataLoaderNoiseMatrix
-from dataset.utils.collate_fn import BatchNoiseMatrix
-from src_downstream_utils.down_stream_utils import LinearPredictHead, resume_pretrain, load_pretrain_cfg
-from utils.tensor_operator import to_device
-from utils.utils import custom_load_pretrained_dict
-
 dir_path = os.path.dirname(os.path.realpath(__file__))
 parent_dir_path = os.path.abspath(os.path.join(dir_path, os.pardir))
 sys.path.insert(0, parent_dir_path)
-from config import args
-from splitters import random_scaffold_split, random_split, scaffold_split
+from utils.config_args import args
+from utils.splitters import random_scaffold_split, random_split, scaffold_split
 
-from models import GNN_graphpred
 
 import random
 def seed_everything(seed: int=42):
@@ -39,19 +30,14 @@ def seed_everything(seed: int=42):
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
 
-
-def train(args, model, device, loader, optimizer, scheduler, criterion, predict_head=None):
+def train(model, device, loader, optimizer):
     model.train()
     total_loss = 0
 
     for step, batch in enumerate(tqdm(loader, desc="Iteration")):
-        batch = to_device(batch, device)
-        g = batch['graphs']
-        node_mask = batch['node_masks']
-        pred = model(X=g.X, E=g.E, node_mask=node_mask)
-        if predict_head is not None:
-            pred = predict_head(pred, node_mask)
-        y = batch['y'].view(pred.shape).to(torch.float)
+        batch = batch.to(device)
+        pred = model(batch.x, batch.edge_index, batch.edge_attr, batch.batch).squeeze()
+        y = batch.y.squeeze().float()
 
         loss = reg_criterion(pred, y)
 
@@ -63,19 +49,19 @@ def train(args, model, device, loader, optimizer, scheduler, criterion, predict_
     return total_loss / len(loader)
 
 
-def eval(model, device, loader, predict_head):
+def eval(model, device, loader):
     model.eval()
     y_true, y_pred = [], []
 
     # for step, batch in enumerate(loader):
     for step, batch in enumerate(tqdm(loader, desc="Iteration")):
-        batch = to_device(batch, device)
-        g = batch['graphs']
-        node_mask = batch['node_masks']
+        batch = batch.to(device)
         with torch.no_grad():
-            pred = model(X=g.X, E=g.E, node_mask=node_mask)
-            if predict_head is not None:
-                y_pred = predict_head(pred, node_mask)
+            pred = model(batch.x, batch.edge_index, batch.edge_attr, batch.batch).squeeze(1)
+ 
+        true = batch.y.view(pred.shape)
+        y_true.append(true)
+        y_pred.append(pred)
 
     y_true = torch.cat(y_true, dim=0).cpu().numpy()
     y_pred = torch.cat(y_pred, dim=0).cpu().numpy()
@@ -85,7 +71,7 @@ def eval(model, device, loader, predict_head):
 
 
 if __name__ == '__main__':
-    pretrain_cfg = load_pretrain_cfg(args)
+
     device = torch.device('cuda:' + str(args.device)) \
         if torch.cuda.is_available() else torch.device('cpu')
 
@@ -142,23 +128,17 @@ if __name__ == '__main__':
 
         # set up model
         args.task_type = 'regression'
-        if False and args.model_name == "gnn":
-            model = GNN_graphpred(
-                args.num_layer,
-              args.emb_dim,
-              num_tasks,
-              JK=args.JK,
-              drop_ratio=args.dropout_ratio,
-              graph_pooling=args.graph_pooling,
-              gnn_type=args.gnn_type)
+        model = GNN_graphpred(args.num_layer,
+                              args.emb_dim,
+                              num_tasks,
+                              JK=args.JK,
+                              drop_ratio=args.dropout_ratio,
+                              graph_pooling=args.graph_pooling,
+                              gnn_type=args.gnn_type)
         if not args.input_model_file == '':
             model.from_pretrained(args.input_model_file)
         model.to(device)
         # print(model)
-        model = GraphTransformer(**pretrain_cfg.network.molEncoder)
-        predict_head = LinearPredictHead(256, num_tasks)
-        predict_head.to(device)
-        resume_pretrain(pretrain_cfg, model)
 
         model_param_group = [
             {'params': model.gnn.parameters()},

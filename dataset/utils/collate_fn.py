@@ -7,34 +7,37 @@ from .default_collate import default_collate
 # from ..creat_dataloader import collate_fn_register
 
 # @collate_fn_register
-class BatchNoiseMatrix(Data):
+class BatchDenseMatrix(Data):
     def __init__(self, batch=None, **kwargs):
-        super(BatchNoiseMatrix, self).__init__(**kwargs)
+        super(BatchDenseMatrix, self).__init__(**kwargs)
         self.batch = batch
 
     @staticmethod
-    def from_data_list(items, transforms=None):
+    def from_data_list(items, transforms=None, has_img=True):
 
         r"""Constructs a batch object from a python list holding
         :class:`torch_geometric.data.Data` objects.
         The assignment vector :obj:`batch` is created on the fly."""
         re_dict = {}
-        data_list = list(item.pop('graphs') for item in items)
-        img_collat = default_collate(items)
-        def flatten_first(f_key):
-            img_p = img_collat[f_key]
-            b, n, c, h, w = img_p.size()
-            img_collat[f_key] = torch.reshape(img_p, (b * n, c, h, w))
 
-        for key_name in ['imgs_ins']:
-            flatten_first(key_name)
+        data_list = list(item.pop('graphs') for item in items)
         geometric_batch = Batch().from_data_list(data_list)
         matrix_graphs, node_masks = to_dense(*fetch_geometric_batch(geometric_batch, ['edge_attr', 'batch']))
         matrix_graphs = matrix_graphs.to(None, 'float')
         re_dict.update({'graphs': matrix_graphs, 'node_masks': node_masks})
+
+        if has_img:
+            img_collat = default_collate(items)
+            def flatten_first(f_key):
+                img_p = img_collat[f_key]
+                b, n, c, h, w = img_p.size()
+                img_collat[f_key] = torch.reshape(img_p, (b * n, c, h, w))
+            for key_name in ['imgs_ins']:
+                flatten_first(key_name)
+            re_dict.update(img_collat)
+
         if hasattr(data_list[0], 'y') and data_list[0].y is not None:
             re_dict['y'] = torch.cat([d.y for d in data_list])
-        re_dict.update(img_collat)
         return re_dict
 
 # @collate_fn_register

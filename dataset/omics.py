@@ -3,6 +3,19 @@ import torch
 from torch_geometric.data import Batch
 
 from . import dataset_register
+from .utils.load_data import process_graph
+from .utils.collate_fn import BatchDenseMatrix
+
+def process_data(smiles, model_name='gin'):
+    graphs = process_graph(smiles)
+    if model_name == 'gin':
+        loader = Batch.from_data_list(graphs)
+    elif model_name == 'graph_transformer':
+        graphs = [{"graphs": g} for g in graphs]
+        loader = BatchDenseMatrix.from_data_list(graphs, has_img=False)
+    else:
+        raise NotImplementedError
+    return loader
 
 
 @dataset_register
@@ -22,7 +35,7 @@ class NewSmilesOmicsDataset:
     def __getitem__(self, i):
         reactant_graph = self.raw_graphs[i][0]
         # img = np.load(self.raw_graphs[i][1][0])
-        img = np.load(np.random.choice(self.raw_graphs[i][1]))
+        img = np.load(self.raw_graphs[i][1])
         if self.cfg.cDNA:
             img = img[[2, 0, 1], :, :]
         if self.transform is not None:
@@ -30,8 +43,8 @@ class NewSmilesOmicsDataset:
         re_dict = {'graphs': reactant_graph, 'imgs_ins': img.unsqueeze(0)}
         return re_dict
 
-    def collate_fn(self, items):
-        batched_graphs = Batch.from_data_list([item[0] for item in items])
-        imgs = torch.stack([item[1] for item in items], 0)
-        return batched_graphs, imgs
+    # def collate_fn(self, items):
+    #     batched_graphs = Batch.from_data_list([item[0] for item in items])
+    #     imgs = torch.stack([item[1] for item in items], 0)
+    #     return batched_graphs, imgs
 

@@ -1,10 +1,10 @@
-_Base_Config: 'config/miga/mil_miga_max_head_r50.yaml'
+_Base_Config: 'config/miga/miga_graphTrans.yaml'
 
 gpus: '7'
 
 run:
-  task: max_head_r50_resume
-  resume: '/rhome/lianyu.zhou/cache/MIGA/Agg_maxhead_r50_mask_fix/2022-9-24-01-35-29/weight/model_345.pth'
+  task: xxxxx_resume
+  resume: 'Path_to_the_model.pth'
 
 
 

@@ -1,4 +1,4 @@
-_Base_Config: 'config/miga/mil_miga_max_head_r50.yaml'
+_Base_Config: 'config/miga/miga_graphTrans.yaml'
 
 gpus: '2'
 
@@ -6,8 +6,8 @@ batch_size: 512
 
 run:
   run_type: 'test'
-  task: max_head_r50_mask_fix_test
-  resume: '/rhome/lianyu.zhou/cache/MIGA/Agg_maxhead_r50_mask_fix/2022-9-24-01-35-29/weight/model_400.pth'
+  task: graphTrans_test
+  resume: 'path_to_model.pth'
 
 
 

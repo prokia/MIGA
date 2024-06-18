@@ -14,8 +14,6 @@ from torch.utils import data
 from torch_geometric.data import (Data, InMemoryDataset, download_url,
                                   extract_zip)
 
-from src_downstream_utils.down_stream_utils import mol_to_gformer_matrix_data
-
 
 def mol_to_graph_data_obj_reg(mol):
     """ used in MoleculeDataset() class
@@ -257,8 +255,7 @@ class MoleculeDatasetRegression(InMemoryDataset):
                 rdkit_mol = rdkit_mol_objs[i]
                 if rdkit_mol is None:
                     continue
-                # data = mol_to_graph_data_obj_reg(rdkit_mol)
-                data = mol_to_gformer_matrix_data(rdkit_mol)
+                data = mol_to_graph_data_obj_reg(rdkit_mol)
                 data.id = torch.tensor([i])
                 data.y = torch.tensor(labels[i])
                 data_list.append(data)
