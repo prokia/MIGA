@@ -51,7 +51,7 @@ Check the following scripts:
 
 | Model                     | File Size  |Update Date | Download Link                                                | 
 |--------------------------|------------| ------------|--------------------------------------------------------------|
-| molecular pretrain (GIN)       | 81MB   | Aug 17 2022 |  [[model weights](https://github.com/prokia/MIGA/blob/main/model/miga_graphtrans_256.pth)]     |
+| molecular pretrain (GIN)       | 81MB   | Aug 17 2022 |  [[model weights](https://github.com/prokia/MIGA/blob/main/model/miga_gin_256.pth)]     |
 | molecular pretrain (GraphTransformer)          | 96MB   | Feb 05 2023 | [[model weights](https://github.com/prokia/MIGA/blob/main/model/miga_graphtrans_256.pth)]      |
 
 
@@ -66,7 +66,7 @@ from dataset import process_data
 
 model = MIGA('graph_transformer', is_eval=True)
 model.eval()
-checkpoint = torch.load('models/model.pth', map_location='cpu')
+checkpoint = torch.load('models/miga_graphtrans_256.pth', map_location='cpu')
 model.load_state_dict(checkpoint, strict=False)
 
 smiles = 'c1ccc(cc1)C2=NCC(=O)Nc3c2cc(cc3)[N+](=O)[O]'
