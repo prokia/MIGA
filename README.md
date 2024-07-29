@@ -2,7 +2,7 @@
 Source code for Cross-modal Graph Contrastive Learning with Cellular Images.
 
 
-##### [Paper on bioRxiv](https://www.biorxiv.org/content/10.1101/2022.06.05.494905v1)
+##### [Paper on Advanced Science](https://onlinelibrary.wiley.com/doi/10.1002/advs.202404845)
 
 ####  Environments
 MIGA requires anaconda with python 3.7 or later, cudatoolkit=11.1 and below packages
@@ -78,5 +78,12 @@ molecule_embeddings = model.get_graph_embedding(data)
 Please cite the following paper if you use this code in your work.
 
 ```
-S. Zheng, J. Rao, J. Zhang, L. Zhou, J. Xie, E. Cohen, W. Lu, C. Li, Y. Yang, Cross-modal Graph Contrastive Learning with Cellular Images. Adv. Sci. 2024, 2404845. https://doi.org/10.1002/advs.202404845
+@article{zheng2022cross,
+  title={Cross-Modal Graph Contrastive Learning with Cellular Images},
+  author={Zheng, Shuangjia and Rao, Jiahua and Zhang, Jixian and Zhou, Lianyu and Xie, Jiancong and Cohen, Ethan and Lu, Wei and Li, Chengtao and Yang, Yuedong},
+  journal={Advanced Science},
+  pages={2404845},
+  year={2022},
+  publisher={Wiley Online Library}
+}
 ```
