@@ -33,7 +33,7 @@ class MIGA(nn.Module):
                        is_eval=False):
         super().__init__()
         self.molEncoder, self.imgEncoder = molEncoder, imgEncoder
-        self.imgGenerator, molGenerator = imgGenerator, molGenerator
+        self.imgGenerator, self.molGenerator = imgGenerator, molGenerator
         self.gic_loss = gic_loss
         self.check_params(name, molEncoder, imgEncoder, imgGenerator, molGenerator, gic_loss)
 
